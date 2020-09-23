@@ -3,6 +3,9 @@ library(caret)
 library(dslabs)
 library(tidyverse)
 ds_theme_set()
+
+# predicting sex from height
+
 data("heights")
 y <- heights$sex
 x <- heights$height
@@ -45,3 +48,34 @@ best_cutoff
 y_hat <- ifelse(test_set$height > best_cutoff, "Male", "Female") %>%
   factor(levels = levels(test_set$sex))
 mean(y_hat == test_set$sex)
+
+# confusion matrix
+
+table(predicted = y_hat, actual = test_set$sex)
+test_set %>%
+  mutate(y_hat = y_hat) %>%
+  group_by(sex) %>%
+  summarise(accuracy = mean(y_hat == sex))
+prev <- mean(y == "Male")
+prev
+confusionMatrix(data = y_hat, reference = test_set$sex)
+
+cutoff <- seq(61,70)
+F_1 <- map_dbl(cutoff, function(x){
+  y_hat <- ifelse(train_set$height > x, "Male", "Female") %>%
+    factor(levels = levels(test_set$sex))
+  F_meas(data = y_hat, reference = factor(train_set$sex))
+})
+data.frame(cutoff, F_1) %>%
+  ggplot(aes(cutoff, F_1)) +
+  geom_point() + geom_line()
+ggsave("plots/heights_sex_cutoff_F_1.jpg")
+max(F_1)
+best_cutoff <- cutoff[which.max(F_1)]
+best_cutoff
+y_hat <- ifelse(test_set$height > best_cutoff, "Male", "Female") %>%
+  factor(levels = levels(test_set$sex))
+mean(y_hat == test_set$sex)
+confusionMatrix(data = y_hat, reference = test_set$sex)
+sensitivity(data = y_hat, reference = test_set$sex)
+specificity(data = y_hat, reference = test_set$sex)

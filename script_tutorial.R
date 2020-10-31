@@ -105,3 +105,63 @@ mean((y_hat - test_set$son)^2)
 
 y_hat <- predict(fit, test_set)
 mean((y_hat - test_set$son)^2)
+
+# categorical data regression
+
+data("heights")
+y <- heights$height
+set.seed(2, sample.kind = "Rounding")
+test_index <- createDataPartition(y, times = 1, p = 0.5, list = FALSE)
+train_set <- heights %>% slice(-test_index)
+test_set <- heights %>% slice(test_index)
+train_set %>% 
+  filter(round(height)==66) %>%
+  summarize(y_hat = mean(sex=="Female"))
+heights %>% 
+  mutate(x = round(height)) %>%
+  group_by(x) %>%
+  filter(n() >= 10) %>%
+  summarize(prop = mean(sex == "Female")) %>%
+  ggplot(aes(x, prop)) +
+  geom_point()
+ggsave("plots/heights_proportion_female.jpg")
+lm_fit <- mutate(train_set, y = as.numeric(sex == "Female")) %>% lm(y ~ height, data = .)
+p_hat <- predict(lm_fit, test_set)
+y_hat <- ifelse(p_hat > 0.5, "Female", "Male") %>% factor()
+confusionMatrix(y_hat, test_set$sex)$overall["Accuracy"]
+confusionMatrix(y_hat, test_set$sex)
+
+# logistic regression
+
+heights %>% 
+  mutate(x = round(height)) %>%
+  group_by(x) %>%
+  filter(n() >= 10) %>%
+  summarize(prop = mean(sex == "Female")) %>%
+  ggplot(aes(x, prop)) +
+  geom_point() + 
+  geom_abline(intercept = lm_fit$coef[1], slope = lm_fit$coef[2])
+ggsave("plots/heights_proportion_female_regression_line.jpg")
+range(p_hat)
+
+## fit logistic regression model
+
+glm_fit <- train_set %>% 
+  mutate(y = as.numeric(sex == "Female")) %>%
+  glm(y ~ height, data=., family = "binomial")
+p_hat_logit <- predict(glm_fit, newdata = test_set, type = "response")
+tmp <- heights %>% 
+  mutate(x = round(height)) %>%
+  group_by(x) %>%
+  filter(n() >= 10) %>%
+  summarize(prop = mean(sex == "Female"))
+logistic_curve <- data.frame(x = seq(min(tmp$x), max(tmp$x))) %>%
+  mutate(p_hat = plogis(glm_fit$coef[1] + glm_fit$coef[2]*x))
+tmp %>% 
+  ggplot(aes(x, prop)) +
+  geom_point() +
+  geom_line(data = logistic_curve, mapping = aes(x, p_hat), lty = 2)
+ggsave("plots/heights_proportion_female_general_regression_line.jpg")
+y_hat_logit <- ifelse(p_hat_logit > 0.5, "Female", "Male") %>% factor
+confusionMatrix(y_hat_logit, test_set$sex)$overall[["Accuracy"]]
+confusionMatrix(y_hat_logit, test_set$sex)

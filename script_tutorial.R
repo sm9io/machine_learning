@@ -233,3 +233,30 @@ mnist_27$true_p %>%
   stat_contour(aes(x_1, x_2, z=p_hat), breaks=c(0.5), color="black") +
   geom_point(mapping = aes(x_1, x_2, color=y), data = mnist_27$test)
 ggsave("plots/7_vs_2_p.jpg")
+
+# section 3.2
+
+data("polls_2008")
+qplot(day, margin, data = polls_2008)
+ggsave("plots/2008_polls_day_margin.jpg")
+
+span <- 7
+fit <- with(polls_2008,ksmooth(day, margin, x.points = day, kernel="box", bandwidth =span))
+polls_2008 %>% mutate(smooth = fit$y) %>%
+  ggplot(aes(day, margin)) +
+  geom_point(size = 3, alpha = .5, color = "grey") + 
+  geom_line(aes(day, smooth), color="red")
+ggsave("plots/2008_polls_day_margin_smooth_box.jpg")
+
+span <- 7
+fit <- with(polls_2008, ksmooth(day, margin,  x.points = day, kernel="normal", bandwidth = span))
+polls_2008 %>% mutate(smooth = fit$y) %>%
+  ggplot(aes(day, margin)) +
+  geom_point(size = 3, alpha = .5, color = "grey") + 
+  geom_line(aes(day, smooth), color="red")
+ggsave("plots/2008_polls_day_margin_smooth_normal.jpg")
+
+polls_2008 %>% ggplot(aes(day, margin)) +
+  geom_point() + 
+  geom_smooth(color="red", span = 0.15, method = "loess", method.args = list(degree=1))
+ggsave("plots/2008_polls_day_margin_smooth_loess_geomsmooth.jpg")

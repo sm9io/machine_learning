@@ -423,3 +423,26 @@ y <- mnist$train$labels
 ind <- (x > 50 & x < 205)
 ind <- rowMeans(ind)
 mean(ind)
+
+# cc07
+
+library(dslabs)
+data(tissue_gene_expression)
+dim(tissue_gene_expression$x)
+table(tissue_gene_expression$y)
+d <- dist(tissue_gene_expression$x)
+
+x_1 <- as.matrix(d)[1:2,1:2]
+x_2 <- as.matrix(d)[39:40,39:40]
+x_3 <- as.matrix(d)[73:74,73:74]
+x_1
+x_2
+x_3
+x_a <- c(x_1, x_2, x_3)
+x_a
+
+d <- dist(tissue_gene_expression$x)
+ind <- c(1, 2, 39, 40, 73, 74)
+as.matrix(d)[ind,ind]
+image(as.matrix(d))
+ggsave("plots/distance_image.jpg")

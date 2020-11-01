@@ -260,3 +260,35 @@ polls_2008 %>% ggplot(aes(day, margin)) +
   geom_point() + 
   geom_smooth(color="red", span = 0.15, method = "loess", method.args = list(degree=1))
 ggsave("plots/2008_polls_day_margin_smooth_loess_geomsmooth.jpg")
+
+# section3.3 working with matrices
+
+library(tidyverse)
+library(dslabs)
+if(!exists("mnist")) mnist <- read_mnist()
+class(mnist$train$images)
+x <- mnist$train$images[1:1000,] 
+y <- mnist$train$labels[1:1000]
+
+length(x[,1])
+x_1 <- 1:5
+x_2 <- 6:10
+cbind(x_1, x_2)
+dim(x)
+dim(x_1)
+dim(as.matrix(x_1))
+dim(x)
+
+my_vector <- 1:15
+mat <- matrix(my_vector, 5, 3)
+mat
+mat_t <- matrix(my_vector, 3, 5, byrow = TRUE)
+mat_t
+identical(t(mat), mat_t)
+matrix(my_vector, 5, 5)
+grid <- matrix(x[3,], 28, 28)
+image(1:28, 1:28, grid)
+ggsave("plots/number4_image_default.jpg")
+# flip the image back
+image(1:28, 1:28, grid[, 28:1])
+ggsave("plots/number4_image_flipped.jpg")

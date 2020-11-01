@@ -414,3 +414,12 @@ mnist_27$train %>%
   geom_point() +
   geom_smooth(method = "loess")
 ggsave("plots/7_vs_2_scatter_x2y_smooth_loess.jpg")
+
+# cc06
+
+if(!exists("mnist")) mnist <- read_mnist()
+x <- mnist$train$images
+y <- mnist$train$labels
+ind <- (x > 50 & x < 205)
+ind <- rowMeans(ind)
+mean(ind)

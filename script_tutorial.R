@@ -292,3 +292,94 @@ ggsave("plots/number4_image_default.jpg")
 # flip the image back
 image(1:28, 1:28, grid[, 28:1])
 ggsave("plots/number4_image_flipped.jpg")
+
+sums <- rowSums(x)
+avg <- rowMeans(x)
+data_frame(labels = as.factor(y), row_averages = avg) %>%
+  qplot(labels, row_averages, data = ., geom = "boxplot")
+ggsave("plots/numbers_ink_density_rowmean_boxplot.jpg")
+avgs <- apply(x, 1, mean)
+sds <- apply(x, 2, sd)
+
+library("matrixStats")
+sds <- colSds(x)
+qplot(sds, bins = "30", color = I("black"))
+ggsave("plots/numbers_pixels_ink_density_sd_histogram.jpg")
+image(1:28, 1:28, matrix(sds, 28, 28)[, 28:1])
+ggsave("plots/numbers_pixels_ink_density_sd_image.jpg")
+x[ ,c(351,352)]
+x[c(2,3),]
+new_x <- x[ ,colSds(x) > 60]
+dim(new_x)
+class(x[,1])
+dim(x[1,])
+class(x[ , 1, drop=FALSE])
+dim(x[, 1, drop=FALSE])
+
+mat <- matrix(1:15, 5, 3)
+as.vector(mat)
+qplot(as.vector(x), bins = 30, color = I("black"))
+ggsave("plots/numbers_pixels_ink_density_value_histogram.jpg")
+new_x <- x
+new_x[new_x < 50] <- 0
+
+mat <- matrix(1:15, 5, 3)
+mat[mat < 3] <- 0
+mat
+
+mat <- matrix(1:15, 5, 3)
+mat[mat > 6 & mat < 12] <- 0
+mat
+#binarize the data
+bin_x <- x
+bin_x[bin_x < 255/2] <- 0
+bin_x[bin_x > 255/2] <- 1
+bin_X <- (x > 255/2)*1
+
+#scale each row of a matrix
+(x - rowMeans(x)) / rowSds(x)
+#scale each column
+t(t(x) - colMeans(x))
+#take each entry of a vector and subtracts it from the corresponding row or column
+x_mean_0 <- sweep(x, 2, colMeans(x))
+#divide by the standard deviation
+x_mean_0 <- sweep(x, 2, colMeans(x))
+x_standardized <- sweep(x_mean_0, 2, colSds(x), FUN = "/")
+
+# section4.1 distance
+
+library(tidyverse)
+library(dslabs)
+if(!exists("mnist")) mnist <- read_mnist()
+set.seed(0, sample.kind = "Rounding")
+ind <- which(mnist$train$labels %in% c(2,7)) %>% sample(500)
+x <- mnist$train$images[ind,]
+y <- mnist$train$labels[ind]
+y[1:3]
+x_1 <- x[1,]
+x_2 <- x[2,]
+x_3 <- x[3,]
+#distance between two numbers
+sqrt(sum((x_1 - x_2)^2))
+sqrt(sum((x_1 - x_3)^2))
+sqrt(sum((x_2 - x_3)^2))
+#compute distance using matrix algebra
+sqrt(crossprod(x_1 - x_2))
+sqrt(crossprod(x_1 - x_3))
+sqrt(crossprod(x_2 - x_3))
+#compute distance between each row
+d <- dist(x)
+class(d)
+as.matrix(d)[1:3,1:3]
+#visualize these distances
+image(as.matrix(d))
+ggsave("plots/numbers_pixels_ink_density_observation_distance_image.jpg")
+#order the distance by labels
+image(as.matrix(d)[order(y), order(y)])
+ggsave("plots/numbers_pixels_ink_density_observation_distance_orderby_label_image.jpg")
+#compute distance between predictors
+d <- dist(t(x))
+dim(as.matrix(d))
+d_492 <- as.matrix(d)[492,]
+image(1:28, 1:28, matrix(d_492, 28, 28))
+ggsave("plots/numbers_pixels_ink_density_distance_pixel_492.jpg")

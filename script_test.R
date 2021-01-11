@@ -566,3 +566,54 @@ mean(sapply(1:B, function(i){
 sd(sapply(1:B, function(i){
   quantile(y[y_sam_ind[[i]]], 0.75)
 }))
+
+#cc 09
+
+library(dslabs)
+library(caret)
+library(tidyverse)
+data("tissue_gene_expression")
+set.seed(1993, sample.kind="Rounding")
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+data_question <- data.frame(y = as.factor(y), x = x)
+train_question <- train (y~., method = "lda", data = data_question)
+train_question$results
+train_question$finalModel
+train_question$finalModel$means
+
+library(dslabs)      
+library(caret)
+data("tissue_gene_expression")
+set.seed(1993, sample.kind = "Rounding")
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+data_question <- data.frame(y = as.factor(y), x = x)
+train_question <- train (y~., method = "qda", data = data_question)
+train_question$results
+train_question$finalModel
+train_question$finalModel$means
+
+set.seed(1993, sample.kind="Rounding")
+ind <- which(tissue_gene_expression$y %in% c("cerebellum", "hippocampus"))
+y <- droplevels(tissue_gene_expression$y[ind])
+x <- tissue_gene_expression$x[ind, ]
+x <- x[, sample(ncol(x), 10)]
+data_question <- data.frame(y = as.factor(y), x = x)
+train_question <- train (y~., method = "lda", data = data_question, preProcess = "center")
+train_question$finalModel$means
+
+library(dslabs)      
+library(caret)
+data("tissue_gene_expression")
+set.seed(1993, sample.kind="Rounding")
+y <- tissue_gene_expression$y
+x <- tissue_gene_expression$x
+x <- x[, sample(ncol(x), 10)]
+data_question <- data.frame(y = as.factor(y), x = x)
+train_question <- train (y~., method = "lda", data = data_question, preProcess = "center")
+train_question$results

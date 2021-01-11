@@ -446,3 +446,123 @@ ind <- c(1, 2, 39, 40, 73, 74)
 as.matrix(d)[ind,ind]
 image(as.matrix(d))
 ggsave("plots/distance_image.jpg")
+
+options(digits = 3)
+set.seed(1, sample.kind = "Rounding")
+test_index <- createDataPartition(heights$sex, times = 1, p = 0.5, list = FALSE)
+heights_train <- heights %>% slice(-test_index)
+heights_test <- heights %>% slice(test_index)
+ks <- seq(1, 101, 3)
+f_1 <- sapply(ks, function(k){
+  heights_knn <- knn3(sex ~ height, heights_train, k = ks)
+  heights_y <- predict(heights_knn, heights_test, type = "class")
+  F_meas(data = heights_y, reference = factor(heights_test$sex))
+})
+max(f_1)
+ks[which.max(f_1)]
+
+library(dslabs)
+library(caret)
+data("tissue_gene_expression")
+set.seed(1, sample.kind = "Rounding")
+test_index <- createDataPartition(tissue_gene_expression$y, times = 1, p = 0.5, list = FALSE)
+tissue_gene_train_y <- tissue_gene_expression$y[-test_index]
+tissue_gene_test_y <- tissue_gene_expression$y[test_index]
+tissue_gene_train_x <- tissue_gene_expression$x[-test_index,]
+tissue_gene_test_x <- tissue_gene_expression$x[test_index,]
+tissue_gene_train <- list(x = tissue_gene_train_x, y = tissue_gene_train_y)
+tissue_gene_test <- list(x = tissue_gene_test_x, y = tissue_gene_test_y)
+ks <- seq(1, 11, 2)
+tissue_gene_test_acc <- sapply(ks, function(ks){
+  tissue_model <- knn3(y~., data = as.data.frame(tissue_gene_train), k = ks)
+  tissue_y_hat <- predict(tissue_model, as.data.frame(tissue_gene_test), type = "class")
+  data.frame(k = ks, acc = confusionMatrix(data = tissue_y_hat, reference = tissue_gene_test_y)$overall["Accuracy"])
+})
+tissue_gene_test_acc
+
+# cc08
+
+library(tidyverse)
+library(caret)
+set.seed(1996, sample.kind="Rounding")
+n <- 1000
+p <- 10000
+x <- matrix(rnorm(n*p), n, p)
+colnames(x) <- paste("x", 1:ncol(x), sep = "_")
+y <- rbinom(n, 1, 0.5) %>% factor()
+x_subset <- x[ ,sample(p, 100)]
+fit <- train(x_subset, y)
+fit$results
+fit <- train(x_subset, y, method = "glm")
+fit$results
+
+library(genefilter)
+tt <- colttests(x, y)
+str(tt)
+pvals <- tt$p.value
+ind <- which(pvals < 0.01)
+length(ind)
+x_subset <- x[ ,ind]
+str(x_subset)
+fit <- train(x_subset, y)
+fit <- train(x_subset, y, method = "glm")
+fit$results
+fit <- train(x_subset, y, method = "knn", tuneGrid = data.frame(k = seq(101, 301, 25)))
+ggplot(fit)
+ggsave("plots/cross_validation_knn_tunegrid_1.jpg")
+
+data(tissue_gene_expression)
+dat_x <- tissue_gene_expression$x
+dat_y <- tissue_gene_expression$y
+set.seed(1, sample.kind="Rounding")
+fit <- train(dat_x, dat_y, method = "knn", tuneGrid = data.frame(k = seq(1,7,2)))
+fit
+plot(fit)
+ggsave("plots/cross_validation_knn_tunegrid_2.jpg")
+
+library(dslabs)
+library(caret)
+data(mnist_27)
+set.seed(1995, sample.kind="Rounding")
+indexes <- createResample(mnist_27$train$y, 10)
+str(indexes)
+sum(indexes$Resample01 == 3)
+sum(indexes$Resample01 == 4)
+sum(indexes$Resample01 == 7)
+
+sum(sapply(1:10, function(i){
+  sum(indexes[[i]] == 3)
+}))
+
+y <- rnorm(100, 0, 1)
+qnorm(0.75)
+quantile(y, 0.75)
+
+B <- 10000
+set.seed(1, sample.kind = "Rounding")
+y_sam <- replicate(B, quantile(rnorm(100, 0, 1), 0.75))
+mean(y_sam)
+sd(y_sam)
+
+set.seed(1, sample.kind = "Rounding")
+y <- rnorm(100, 0, 1)
+set.seed(1, sample.kind = "Rounding")
+y_sam_ind <- createResample(y, 10)
+mean(sapply(1:10, function(i){
+  quantile(y[y_sam_ind[[i]]], 0.75)
+}))
+sd(sapply(1:10, function(i){
+  quantile(y[y_sam_ind[[i]]], 0.75)
+}))
+
+set.seed(1, sample.kind = "Rounding")
+y <- rnorm(100, 0, 1)
+set.seed(1, sample.kind = "Rounding")
+B <- 10000
+y_sam_ind <- createResample(y, B)
+mean(sapply(1:B, function(i){
+  quantile(y[y_sam_ind[[i]]], 0.75)
+}))
+sd(sapply(1:B, function(i){
+  quantile(y[y_sam_ind[[i]]], 0.75)
+}))

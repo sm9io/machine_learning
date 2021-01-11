@@ -383,3 +383,111 @@ dim(as.matrix(d))
 d_492 <- as.matrix(d)[492,]
 image(1:28, 1:28, matrix(d_492, 28, 28))
 ggsave("plots/numbers_pixels_ink_density_distance_pixel_492.jpg")
+
+#knn
+library(tidyverse)
+library(dslabs)
+ds_theme_set()
+data("mnist_27")
+mnist_27$test %>% ggplot(aes(x_1, x_2, color = y)) + geom_point()
+ggsave("plots/27_scatter_x1_x2_col_y.jpg")
+
+#logistic regression
+library(caret)
+fit_glm <- glm(y~x_1+x_2, data=mnist_27$train, family="binomial")
+p_hat_logistic <- predict(fit_glm, mnist_27$test)
+y_hat_logistic <- factor(ifelse(p_hat_logistic > 0.5, 7, 2))
+confusionMatrix(data = y_hat_logistic, reference = mnist_27$test$y)$overall[1]
+
+#fit knn model
+knn_fit <- knn3(y ~ ., data = mnist_27$train)
+
+x <- as.matrix(mnist_27$train[,2:3])
+y <- mnist_27$train$y
+knn_fit <- knn3(x, y)
+
+knn_fit <- knn3(y ~ ., data = mnist_27$train, k=5)
+
+y_hat_knn <- predict(knn_fit, mnist_27$test, type = "class")
+confusionMatrix(data = y_hat_knn, reference = mnist_27$test$y)$overall["Accuracy"]
+
+#overtraining and oversmoothing
+y_hat_knn <- predict(knn_fit, mnist_27$train, type = "class") 
+confusionMatrix(data = y_hat_knn, reference = mnist_27$train$y)$overall["Accuracy"]
+y_hat_knn <- predict(knn_fit, mnist_27$test, type = "class")  
+confusionMatrix(data = y_hat_knn, reference = mnist_27$test$y)$overall["Accuracy"]
+
+#fit knn with k=1
+knn_fit_1 <- knn3(y ~ ., data = mnist_27$train, k = 1)
+y_hat_knn_1 <- predict(knn_fit_1, mnist_27$train, type = "class")
+confusionMatrix(data=y_hat_knn_1, reference=mnist_27$train$y)$overall[["Accuracy"]]
+
+y_hat_knn_1 <- predict(knn_fit_1, mnist_27$test, type = "class")
+confusionMatrix(data=y_hat_knn_1, reference=mnist_27$test$y)$overall[["Accuracy"]]
+
+#fit knn with k=401
+knn_fit_401 <- knn3(y ~ ., data = mnist_27$train, k = 401)
+y_hat_knn_401 <- predict(knn_fit_401, mnist_27$test, type = "class")
+confusionMatrix(data=y_hat_knn_401, reference=mnist_27$test$y)$overall["Accuracy"]
+
+#pick the k in knn
+ks <- seq(3, 251, 2)
+library(purrr)
+accuracy <- map_df(ks, function(k){
+  fit <- knn3(y ~ ., data = mnist_27$train, k = k)
+  y_hat <- predict(fit, mnist_27$train, type = "class")
+  cm_train <- confusionMatrix(data = y_hat, reference = mnist_27$train$y)
+  train_error <- cm_train$overall["Accuracy"]
+  y_hat <- predict(fit, mnist_27$test, type = "class")
+  cm_test <- confusionMatrix(data = y_hat, reference = mnist_27$test$y)
+  test_error <- cm_test$overall["Accuracy"]
+  
+  tibble(train = train_error, test = test_error)
+})
+
+#pick the k that maximizes accuracy using the estimates built on the test data
+ks[which.max(accuracy$test)]
+max(accuracy$test)
+
+#bootstrap
+n <- 10^6
+income <- 10^(rnorm(n, log10(45000), log10(3)))
+qplot(log10(income), bins = 30, color = I("black"))
+ggsave("plots/random_income_hist.jpg")
+m <- median(income)
+m
+
+set.seed(1, sample.kind="Rounding")
+N <- 250
+X <- sample(income, N)
+M<- median(X)
+M
+
+library(gridExtra)
+B <- 10^5
+M <- replicate(B, {
+  X <- sample(income, N)
+  median(X)
+})
+p1 <- qplot(M, bins = 30, color = I("black"))
+p2 <- qplot(sample = scale(M)) + geom_abline()
+grid.arrange(p1, p2, ncol = 2)
+ggsave("plots/sample_income_median_hist_qq.jpg")
+mean(M)
+sd(M)
+
+B <- 10^5
+M_star <- replicate(B, {
+  X_star <- sample(X, N, replace = TRUE)
+  median(X_star)
+})
+tibble(monte_carlo = sort(M), bootstrap = sort(M_star)) %>%
+  qplot(monte_carlo, bootstrap, data = .) + 
+  geom_abline()
+ggsave("plots/sample_income_median_montecarlo_bootstrap_qq.jpg")
+quantile(M, c(0.05, 0.95))
+quantile(M_star, c(0.05, 0.95))
+
+median(X) + 1.96 * sd(X) / sqrt(N) * c(-1, 1)
+mean(M) + 1.96 * sd(M) * c(-1,1)
+mean(M_star) + 1.96 * sd(M_star) * c(-1, 1)

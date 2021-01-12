@@ -621,3 +621,96 @@ train_set %>%
   geom_point(show.legend = FALSE) + 
   stat_ellipse(type="norm")
 ggsave("plots/127_x1_x2_scatter_ellipse.jpg")
+
+# section 5
+
+# section5.2
+
+# Load data
+library(tidyverse)
+library(dslabs)
+data("olive")
+olive %>% as_tibble()
+table(olive$region)
+olive <- select(olive, -area)
+
+# Predict region using KNN
+library(caret)
+fit <- train(region ~ .,  method = "knn", 
+             tuneGrid = data.frame(k = seq(1, 15, 2)), 
+             data = olive)
+ggplot(fit)
+ggsave("plots/italian_olive_train_fit_knn.jpg")
+
+# Plot distribution of each predictor stratified by region
+?gather
+olive %>% gather(fatty_acid, percentage, -region) %>%
+  ggplot(aes(region, percentage, fill = region)) +
+  geom_boxplot() +
+  facet_wrap(~fatty_acid, scales = "free") +
+  theme(axis.text.x = element_blank())
+ggsave("plots/italian_olive_region_percentage_boxplot.jpg")
+
+# plot values for eicosenoic and linoleic
+p <- olive %>% 
+  ggplot(aes(eicosenoic, linoleic, color = region)) + 
+  geom_point()
+p + geom_vline(xintercept = 0.065, lty = 2) + 
+  geom_segment(x = -0.2, y = 10.54, xend = 0.065, yend = 10.54, color = "black", lty = 2)
+ggsave("plots/italian_olive_region_acids_scatter_segmented.jpg")
+
+# load data for regression tree
+data("polls_2008")
+qplot(day, margin, data = polls_2008)
+ggsave("plots/us_polls_2008_day_margin_scatter.jpg")
+
+library(rpart)
+fit <- rpart(margin ~ ., data = polls_2008)
+
+# visualize the splits 
+plot(fit, margin = 0.1)
+text(fit, cex = 0.75)
+ggsave("plots/us_polls_2008_day_margin_tree_rpart_default.jpg")
+polls_2008 %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+ggsave("plots/us_polls_2008_day_margin_tree_rpart_default_predict.jpg")
+
+# change parameters
+fit <- rpart(margin ~ ., data = polls_2008, control = rpart.control(cp = 0, minsplit = 2))
+polls_2008 %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+ggsave("plots/us_polls_2008_day_margin_tree_rpart_cp0_minsplit2_predict.jpg")
+
+# use cross validation to choose cp
+library(caret)
+train_rpart <- 
+  train(margin ~ ., method = "rpart", 
+        tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), data = polls_2008)
+ggplot(train_rpart)
+ggsave("plots/us_polls_2008_day_margin_crossvalidation_train_rpart_cp_rmse.jpg")
+
+# access the final model and plot it
+plot(train_rpart$finalModel, margin = 0.1)
+text(train_rpart$finalModel, cex = 0.75)
+ggsave("plots/us_polls_2008_day_margin_crossvalidation_train_rpart_finalmodel_tree.jpg")
+polls_2008 %>% 
+  mutate(y_hat = predict(train_rpart)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+ggsave("plots/us_polls_2008_day_margin_crossvalidation_rpart_scatter_predict.jpg")
+
+# prune the tree 
+pruned_fit <- prune(fit, cp = 0.01)
+polls_2008 %>% 
+  mutate(y_hat = predict(pruned_fit)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_step(aes(day, y_hat), col="red")
+ggsave("plots/us_polls_2008_day_margin_rpart_scatter_predict_cp0_prune.jpg")

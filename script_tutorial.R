@@ -723,3 +723,23 @@ plot(train_rpart)
 ggsave("plots/27_rpart_cp_accuracy.jpg")
 # compute accuracy
 confusionMatrix(predict(train_rpart, mnist_27$test), mnist_27$test$y)$overall["Accuracy"]
+
+library(randomForest)
+fit <- randomForest(margin~., data = polls_2008) 
+plot(fit)
+ggsave("plots/us_polls_2008_margin_randomforest_trees_error.jpg")
+polls_2008 %>%
+  mutate(y_hat = predict(fit, newdata = polls_2008)) %>% 
+  ggplot() +
+  geom_point(aes(day, margin)) +
+  geom_line(aes(day, y_hat), col="red")
+ggsave("plots/us_polls_2008_margin_randomforest_predict_scatter_line.jpg")
+library(randomForest)
+train_rf <- randomForest(y ~ ., data=mnist_27$train)
+confusionMatrix(predict(train_rf, mnist_27$test), mnist_27$test$y)$overall["Accuracy"]
+# use cross validation to choose parameter
+train_rf_2 <- train(y ~ .,
+                    method = "Rborist",
+                    tuneGrid = data.frame(predFixed = 2, minNode = c(3, 50)),
+                    data = mnist_27$train)
+confusionMatrix(predict(train_rf_2, mnist_27$test), mnist_27$test$y)$overall["Accuracy"]

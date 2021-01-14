@@ -643,7 +643,6 @@ ggplot(fit)
 ggsave("plots/italian_olive_train_fit_knn.jpg")
 
 # Plot distribution of each predictor stratified by region
-?gather
 olive %>% gather(fatty_acid, percentage, -region) %>%
   ggplot(aes(region, percentage, fill = region)) +
   geom_boxplot() +
@@ -714,3 +713,13 @@ polls_2008 %>%
   geom_point(aes(day, margin)) +
   geom_step(aes(day, y_hat), col="red")
 ggsave("plots/us_polls_2008_day_margin_rpart_scatter_predict_cp0_prune.jpg")
+
+# fit a classification tree and plot it
+train_rpart <- train(y ~ .,
+                     method = "rpart",
+                     tuneGrid = data.frame(cp = seq(0.0, 0.1, len = 25)),
+                     data = mnist_27$train)
+plot(train_rpart)
+ggsave("plots/27_rpart_cp_accuracy.jpg")
+# compute accuracy
+confusionMatrix(predict(train_rpart, mnist_27$test), mnist_27$test$y)$overall["Accuracy"]

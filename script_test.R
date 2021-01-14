@@ -704,3 +704,59 @@ as.data.frame(imp[1]) %>%
   mutate(gene = rownames(as.data.frame(imp[1]))) %>%
          mutate(rank = rank(-Overall)) %>% 
   filter(gene == tree_terms)
+
+# cc12
+
+models <- c("glm", "lda", "naive_bayes", "svmLinear", "knn", 
+            "gamLoess", "multinom", "qda", "rf", "adaboost")
+library(caret)
+library(dslabs)
+library(tidyverse)
+set.seed(1, sample.kind = "Rounding")
+data("mnist_27")
+fits <- lapply(models, function(model){ 
+  print(model)
+  train(y ~ ., method = model, data = mnist_27$train)
+}) 
+names(fits) <- models
+
+length(mnist_27$test$y)
+length(models)
+pred <- sapply(fits, function(object) 
+  predict(object, newdata = mnist_27$test))
+dim(pred)
+pred_df <- pred %>% as.data.frame()
+accuracy <- matrix(nrow = length(mnist_27$test$y), ncol = length(models))
+for(i in 1:10){
+  accuracy[,i] <- pred_df[,i] == mnist_27$test$y
+}
+accuracy %>% colMeans() %>% mean()
+
+acc <- colMeans(pred == mnist_27$test$y)
+acc
+mean(acc)
+
+pred_ens <- matrix(nrow = length(mnist_27$test$y), ncol = length(models))
+for(i in 1:10){
+  pred_ens[,i] <- pred_df[,i] == 7
+}
+pred_ens <- pred_ens %>% rowMeans()
+pred_ens <- ifelse(pred_ens > 0.5, 7, 2)
+mean(pred_ens == mnist_27$test$y)
+
+votes <- rowMeans(pred == "7")
+y_hat <- ifelse(votes > 0.5, "7", "2")
+mean(y_hat == mnist_27$test$y)
+
+sum(acc > mean(y_hat == mnist_27$test$y))
+print(acc > mean(y_hat == mnist_27$test$y))
+
+fits_acc <- matrix(nrow = length(models))
+for(i in 1:length(models)){
+  fits_acc[i] = min(fits[[i]]$results$Accuracy)
+}
+mean(fits_acc)
+
+acc_hat <- sapply(fits, function(fit) min(fit$results$Accuracy))
+mean(acc_hat)
+

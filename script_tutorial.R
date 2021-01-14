@@ -952,3 +952,10 @@ for(i in ind[1:12]){
         xaxt="n", yaxt="n")
 }
 ggsave("plots/mnist_rf_predict_actual_fail.jpg")
+
+p_rf <- predict(fit_rf, x_test[,col_index])$census
+p_rf <- p_rf / rowSums(p_rf)
+p_knn <- predict(fit_knn, x_test[,col_index])
+p <- (p_rf + p_knn)/2
+y_pred <- factor(apply(p, 1, which.max)-1)
+confusionMatrix(y_pred, y_test)

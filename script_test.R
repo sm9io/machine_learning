@@ -617,3 +617,90 @@ x <- x[, sample(ncol(x), 10)]
 data_question <- data.frame(y = as.factor(y), x = x)
 train_question <- train (y~., method = "lda", data = data_question, preProcess = "center")
 train_question$results
+
+#cc10
+library(rpart)
+n <- 1000
+sigma <- 0.25
+set.seed(1, sample.kind = "Rounding")
+x <- rnorm(n, 0, 1)
+y <- 0.75 * x + rnorm(n, 0, sigma)
+dat <- data.frame(x = x, y = y)
+fit <- rpart(y ~ ., data = dat)
+
+plot(fit, margin = 0.1)
+text(fit, cex = 0.75)
+ggsave("plots/random_sample_plus_0_75_rpart_tree.jpg")
+
+dat %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(x, y)) +
+  geom_step(aes(x, y_hat), col=2)
+ggsave("plots/random_sample_plus_0_75_rpart_predict.jpg")
+
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat)
+dat %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(x, y)) +
+  geom_step(aes(x, y_hat), col = "red")
+ggsave("plots/random_sample_plus_0_75_randomforest_predict.jpg")
+plot(fit)
+ggsave("plots/random_sample_plus_0_75_randomforest_tree_error.jpg")
+
+library(randomForest)
+fit <- randomForest(y ~ x, data = dat, nodesize = 50, maxnodes = 25)
+dat %>% 
+  mutate(y_hat = predict(fit)) %>% 
+  ggplot() +
+  geom_point(aes(x, y)) +
+  geom_step(aes(x, y_hat), col = "red")
+ggsave("plots/random_sample_plus_0_75_randomforest_predict_nodes_manual.jpg")
+
+#cc11
+library(caret)
+data("tissue_gene_expression")
+set.seed(1991, sample.kind = "Rounding")
+fit_1 <- train (y~., method = "rpart", 
+              data = as.data.frame(tissue_gene_expression), 
+              tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)))
+plot(fit_1)
+ggsave("plots/tissue_gene_rpart_cp_accuracy.jpg")
+fit_1$bestTune
+
+confusionMatrix(fit_1)
+set.seed(1991, sample.kind = "Rounding")
+fit_2 <- train (y~., method = "rpart", 
+              data = as.data.frame(tissue_gene_expression), 
+              tuneGrid = data.frame(cp = seq(0, 0.1, 0.01)),
+              control = rpart.control(minsplit = 0))
+plot(fit_2)
+ggsave("plots/tissue_gene_rpart_cp_accuracy_minsplit_0.jpg")
+confusionMatrix(fit_2)
+rpart.plot(fit_2$finalModel, cex = 0.65)
+ggsave("plots/tissue_gene_rpart_plot.jpg")
+plot(fit_2$finalModel)
+text(fit_2$finalModel)
+ggsave("plots/tissue_gene_rpart_plot_final_model.jpg")
+
+set.seed(1991, sample.kind = "Rounding")
+fit <- train (y~., method = "rf", 
+                data = as.data.frame(tissue_gene_expression), 
+                tuneGrid = data.frame(mtry = seq(50, 200, 25)),
+                nodesize = 1)
+fit$bestTune
+imp <- varImp(fit)
+imp
+
+tree_terms <- as.character(unique(fit_2$finalModel$frame$var[!(fit_2$finalModel$frame$var == "<leaf>")]))
+tree_terms
+str(imp)
+str(tree_terms)
+filter(imp, rownames(imp) == tree_terms)
+rownames(as.data.frame(imp[1]))
+as.data.frame(imp[1]) %>% 
+  mutate(gene = rownames(as.data.frame(imp[1]))) %>%
+         mutate(rank = rank(-Overall)) %>% 
+  filter(gene == tree_terms)

@@ -760,3 +760,61 @@ mean(fits_acc)
 acc_hat <- sapply(fits, function(fit) min(fit$results$Accuracy))
 mean(acc_hat)
 
+# cc13
+
+library(tidyverse)
+library(lubridate)
+library(dslabs)
+data("movielens")
+
+movielens %>% group_by(movieId) %>% summarise(n = n(), year = min(year)) %>% 
+  ggplot(aes(as.factor(year), n)) + geom_boxplot() + scale_y_sqrt()
+ggsave("plots/movie_rating_n_year_boxplot.jpg")
+
+movielens %>% group_by(movieId) %>%
+  summarize(n = n(), year = as.character(first(year))) %>%
+  qplot(year, n, data = ., geom = "boxplot") +
+  coord_trans(y = "sqrt") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+ggsave("plots/movie_rating_n_year_boxplot_2.jpg")
+
+movielens %>% group_by(movieId) %>% filter(year < 2018 & year >=1993) %>% 
+  mutate(n_year = n()/(2018-min(year))) %>% select(title, rating, n_year) %>% 
+  group_by(title) %>% summarise(avg = mean(rating), n_year = first(n_year)) %>% 
+  arrange(desc(n_year)) %>% head(25)
+
+movielens %>% 
+  filter(year >= 1993) %>%
+  group_by(movieId) %>%
+  summarize(n = n(), years = 2018 - first(year),
+            title = title[1],
+            rating = mean(rating)) %>%
+  mutate(rate = n/years) %>%
+  top_n(25, rate) %>%
+  arrange(desc(rate))
+
+movielens %>% group_by(movieId) %>% filter(year < 2018 & year >=1993) %>% 
+  mutate(n_year = n()/(2018-min(year))) %>% select(title, rating, n_year) %>% 
+  group_by(title) %>% summarise(avg = mean(rating), n_year = first(n_year)) %>% 
+  arrange(desc(n_year)) %>% head(25) %>% mutate(strat = round(n_year)) %>% 
+  group_by(strat) %>% summarise(avg = mean(avg), strat = first(strat)) %>% 
+  ggplot(aes(strat, avg)) + geom_point()
+ggsave("plots/movie_rating_n_year_avg_rating_scatter.jpg")
+
+movielens %>% group_by(movieId) %>% filter(year < 2018 & year >=1993) %>% 
+  mutate(n_year = n()/(2018-min(year))) %>% select(title, rating, n_year) %>% 
+  group_by(title) %>% summarise(avg = mean(rating), n_year = first(n_year)) %>% 
+  arrange(desc(n_year)) %>% head(25) %>% ggplot(aes(n_year, avg)) + geom_point()
+ggsave("plots/movie_rating_n_year_avg_rating_scatter_2.jpg")
+
+movielens %>% 
+  filter(year >= 1993) %>%
+  group_by(movieId) %>%
+  summarize(n = n(), years = 2018 - first(year),
+            title = title[1],
+            rating = mean(rating)) %>%
+  mutate(rate = n/years) %>%
+   ggplot(aes(rate, rating)) +
+  geom_point() +
+  geom_smooth()
+ggsave("plots/movie_rating_n_year_avg_rating_scatter_3.jpg")
